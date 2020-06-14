@@ -1,0 +1,270 @@
+USE [TLC_DR_DEV]
+GO
+
+/****** Object:  View [dbo].[vw_PatientOperationsCasesTimeStampsDev_3]    Script Date: 14/06/2020 11:06:10 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+/****************************************************************
+Desc: Or theatre Actual cases with Patient Name AND TIME Stamps 
+Date: 08 June 2020
+By A.Sharma
+
+
+******************************************************************/
+
+CREATE View 
+
+[dbo].[vw_PatientOperationsCasesTimeStampsDev_3]
+
+as
+
+WITH CTE1 AS (
+
+select 
+
+ca.Urn
+,ca.OperationDate
+, datepart(Year,ca.OperationDate ) as Year 
+, datepart(Month,ca.OperationDate ) as Month 
+, DATEPART(WW, ca.OperationDate ) AS WeekOfYear
+,Cast(DatePart(Month,ca.OperationDate)as Varchar) +'_'+ Substring(Cast(DatePart(YY,ca.OperationDate)as Varchar),3,2) as MonthYear
+,[OperationRoom]
+, AdmExtUrn as AccountNumber
+, pat.UnitNumber
+,pat.[Name] AS PatientName
+,PatientService
+, isnull(ActualOpPs,0) as ActualOpPs
+, ActualPrimaryOpUrn
+, OperationType
+, ActualOp
+, OrN.OrName
+, Orn.OrCleanupTime
+, Orn.OrSetupTime
+, Orn.OrOpTime
+, Orn.OrBillNumber
+, ActualOpSurgeon
+, Dr.Name	
+
+    ,isnull(CT.[Time1],0) as [Time1]
+	,isnull(CT.[Time1],0) as patientSentFor_Time
+	,isnull(CT.[Time2],0) as [Time2]
+	,isnull(CT.[Time2],0) as patientArrival_Time
+	,isnull(CT.[Time3],0) as [Time3]
+	,isnull(CT.[Time3],0) as anaesthesiaBegin_Time
+	,isnull(CT.[Time4],0) as [Time4]
+	,isnull(CT.[Time4],0) as surgeryBegin_Time
+	,isnull(CT.[Time5],0)as[Time5]
+	,isnull(CT.[Time5],0) as surgeryEnd_Time
+	,isnull(CT.[Time6],0)as [Time6]
+	,isnull(CT.[Time6],0) as anaesthesiaEnd_Time
+	,isnull(CT.[Time7],0)as [Time7]
+	,isnull(CT.[Time7],0) as outOfTheatre_Time
+	,isnull(CT.[Time8],0)as [Time8]
+	,isnull(CT.[Time8],0) as recoveryStart_Time
+	,isnull(CT.[Time9],0) as[Time9]
+	,isnull(CT.[Time10],0) as[Time10]
+	,isnull(CT.[Time10],0) as recoveryEnd_Time
+	,isnull(CT.[Time1Date],0) as [Time1Date]
+	,isnull(CT.[Time1Date],0) as patientSentFor_Date
+	,isnull(CT.[Time2Date],0)as[Time2Date]
+	,isnull(CT.[Time2Date],0) as patientArrival_Date
+	,isnull(CT.[Time3Date],0)as[Time3Date]
+	,isnull(CT.[Time3Date],0)as anaesthesiaBegin_Date
+	,isnull(CT.[Time4Date],0)as[Time4Date]
+	,isnull(CT.[Time4Date],0)as surgeryBegin_Date
+	,isnull(CT.[Time5Date],0)as[Time5Date]
+	,isnull(CT.[Time5Date],0)as surgeryEnd_Date
+	,isnull(CT.[Time6Date],0)as[Time6Date]
+	,isnull(CT.[Time6Date] ,0) as anaesthesiaEnd_Date
+	,isnull(CT.[Time7Date],0)as[Time7Date]
+	,isnull(CT.[Time7Date],0) as  outOfTheatre_Date
+	,isnull(CT.[Time8Date],0)as [Time8Date]
+	,isnull(CT.[Time8Date],0) as recoveryStart_Date
+	,isnull(CT.[Time9Date],0)as[Time9Date]
+	,isnull(CT.[Time10Date],0)as[Time10Date]
+	, isnull(CT.[Time10Date],0) as recoveryEnd_Date
+
+	  ,isnull(isnull(isnull(Isnull(CT.[Time3],CT.[Time4]),CT.[Time2] ),CT.[Time1]),'0') as SurgeryStartDerived
+	  ,isnull(isnull(isnull(isnull(CT.[Time7] , CT.[Time6]),CT.[Time5]),CT.[Time8]),'0')  as SurgeryEndDerived
+	  ,ROW_NUMBER() 
+	  OVER(ORDER BY OperationDate ASC) AS TLC_UID
+	  ,Getdate() as view_read_date
+from   
+[LIVE_SCHLCL].[dbo].OrCases Ca with(nolock)
+inner join
+[LIVE_SCHLCL].[dbo].[OrCasesTimes] CT
+on
+ca.URN  = ct.urn
+left outer join 
+[LIVE_SCHLCL].[dbo].[OrCasesActualOperations] spao with(nolock)
+on ct.URN = spao.URN collate SQL_Latin1_General_CP1_CS_AS
+left outer join
+SPLUNK_DB.dbo.vw_MisDoctor Dr
+on
+ActualOpSurgeon = Dr.Mnemonic
+Left outer join 
+LIVE_SCHLCL.dbo.SchApptTypeOrMain OrN
+on ActualOp = OrN.Mnemonic
+left outer join 
+[LIVE_ADMLCL].[dbo].[AdmPatientFile] pat
+on
+AdmExtUrn = pat.AcctNumber  collate SQL_Latin1_General_CP1_CS_AS
+
+Where ca.OperationDate >= '2018-01-01 00:00:00.000' 
+and ca.OperationDate < '2025-01-01 00:00:00.000' 
+and   [OperationRoom] in (
+'THOT01'
+,'THOT02'
+,'THOT03'
+,'THOT04'
+,'THOT05'
+,'THOT06'
+,'THOT07'
+,'THOT08'
+,'THOTHY'
+
+,'DSTH01'
+,'DSTH02'
+,'DSTX01'
+,'DSTX02'
+
+,'DS 1A'
+,'DS 2A'
+,'THEATRE 1'
+,'THEATRE 2'
+,'THEATRE 3'
+,'THEATRE 4'
+,'THEATRE 5'
+,'THEATRE 6'
+,'THEATRE 7'
+,'THEATRE 8'
+,'THEATRE HYB'
+,'MITU TH1'
+,'MITU TH2'
+,'MITU TR1'
+,'MINOPSA'
+
+
+,'EN1',  ---- Added Endoscopy Procedures
+'EN2',
+'EN3',
+'EN4',
+'EN5',
+'EN6'
+
+  )
+   and ActualOp is not Null
+
+ ), 
+ CTE2  AS
+ ( SELECT  [Urn]
+      ,[OperationDate]
+      ,[Year]
+      ,[Month]
+      ,[WeekOfYear]
+      ,[MonthYear]
+      ,[OperationRoom]
+      ,[AccountNumber]
+      ,[UnitNumber]
+      ,[PatientName]
+      ,[PatientService]
+      ,[ActualOpSurgeon]
+      ,[Name] As SurgeonName
+      ,[Time1] as PatientSentFor
+	  ,[Time1Date]  as PatientSentForDate
+	 , [Time2] as PatientArrival,
+  [Time2Date] as PatientArrivalDate,
+  [Time3] as BeginAnaesthesia,
+  [Time3Date] as BeginAnaesthesiaDate,
+  [Time4] as SurgeryBegin,
+  [Time4Date] as SurgeryBeginDate,
+  [Time5] as SurgeryEnd,
+  [Time5Date] as SurgeryEndDate,
+  [Time6] as AnaesthesiaEnd,
+  [Time6Date] as AnaesthesiaEndDate,
+  [Time7] as OutOfTheatre,
+  [Time7Date] as OutOfTheatreDate,
+  [Time8] as InPASCUInRecovery1,
+  [Time8Date] as InPASCUInRecovery1Date,
+  [Time9] as InPASCUInRecovery2,
+  [Time9Date] as InPASCUInRecovery2Date,
+  [Time10] as 'OutofPASCU/Dept',
+  [Time10Date] as 'OutofPASCU/DeptDate'
+	  
+  FROM CTE1
+
+  Where [OperationDate]  >=DATEADD(day,-7,GETDATE())
+  AND
+   OperationRoom IN ( 'DS 1A','THEATRE 1','THEATRE 2','THEATRE 5','THEATRE 7','THEATRE 6','THEATRE 3','DS 2A',
+  'THEATRE 8','MINOPSA',								
+                    'THEATRE 4', 'THEATRE HYB','MITU TH2','MITU TH1','MITU TR1'								
+                    ) 
+  Group by 
+  [Urn] ,[OperationDate],[Year] ,[Month],[WeekOfYear] ,[MonthYear] ,[OperationRoom],[AccountNumber] ,[UnitNumber]
+      ,[PatientName] ,[PatientService] ,[ActualOpSurgeon] ,[Name]  ,[Time1]  ,[Time1Date]  , [Time2] ,  [Time2Date] ,
+  [Time3] ,  [Time3Date] ,  [Time4] , [Time4Date] ,  [Time5] ,  [Time5Date] ,  [Time6] ,  [Time6Date] ,  [Time7] ,
+  [Time7Date] ,  [Time8] ,  [Time8Date] ,  [Time9] ,  [Time9Date] ,  [Time10] ,  [Time10Date]
+ 
+ ), CTE3 AS
+ (
+ SELECT [Urn]
+      ,[OperationDate]
+      ,[Year]
+      ,[Month]
+      ,[WeekOfYear]
+      ,[MonthYear]
+      ,[OperationRoom]
+      ,[AccountNumber]
+      ,[UnitNumber]
+      ,[PatientName]
+      ,[PatientService]
+      ,[ActualOpSurgeon]
+      ,[SurgeonName]
+      
+	  ,COALESCE ((NULLIF([BeginAnaesthesia], 0)),(NULLIF([SurgeryBegin], 0)),(NULLIF([PatientArrival], 0)))  
+	   AS SurgeryStartDerivedTime	  
+	  ,COALESCE((NULLIF([BeginAnaesthesiaDate],0)),(NULLIF([SurgeryBeginDate],0)),(NULLIF([PatientArrivalDate],0))) AS SurgeryStartDerivedDate
+	  
+	   ,COALESCE ((NULLIF([OutOfTheatre], 0)),(NULLIF([AnaesthesiaEnd], 0)),(NULLIF([SurgeryEnd], 0)),(NULLIF([InPASCUInRecovery1], 0)))  
+	   AS SurgeryEndDerivedTime
+	  ,COALESCE ((NULLIF([OutOfTheatreDate],0)),(NULLIF([AnaesthesiaEndDate],0)),(NULLIF([SurgeryEndDate],0)),(NULLIF([InPASCUInRecovery1Date],0))) 
+	   AS SurgeryEndDerivedDate
+	  ,[PatientSentFor]
+      ,[PatientSentForDate]
+      ,[PatientArrival]
+      ,[PatientArrivalDate]
+      ,[BeginAnaesthesia]
+      ,[BeginAnaesthesiaDate]
+      ,[SurgeryBegin]
+      ,[SurgeryBeginDate]
+      ,[SurgeryEnd]
+      ,[SurgeryEndDate]
+      ,[AnaesthesiaEnd]
+      ,[AnaesthesiaEndDate]
+      ,[OutOfTheatre]
+      ,[OutOfTheatreDate]
+      ,[InPASCUInRecovery1]
+      ,[InPASCUInRecovery1Date]
+      ,[InPASCUInRecovery2]
+      ,[InPASCUInRecovery2Date]
+      ,[OutofPASCU/Dept]
+      ,[OutofPASCU/DeptDate]
+  FROM CTE2
+ )
+ SELECT * FROM CTE3  
+
+
+
+
+
+
+
+
+GO
