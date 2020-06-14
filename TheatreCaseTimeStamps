@@ -1,70 +1,44 @@
-USE [TLC_DR_DEV]
-GO
 
-/****** Object:  View [dbo].[vw_PatientOperationsCasesTimeStampsDev_V2]    Script Date: 14/06/2020 09:27:13 ******/
-SET ANSI_NULLS ON
-GO
-
-SET QUOTED_IDENTIFIER ON
-GO
-
-/****************************************************************
-Desc: Or theatre Actual cases with Patient Name AND TIME Stamps 
-Date: 08 June 2020
-By A.Sharma
-
-
-******************************************************************/
-
-CREATE View 
-
-[dbo].[vw_PatientOperationsCasesTimeStampsDev_V2]
-
-as
-
-WITH CTE1 AS
-(
-
-SELECT 
-       [Urn]
+SELECT [Urn]
       ,[OperationDate]
       ,[Year]
-      ,[PatientSentFor]
-	  ,[PatientSentForDate]
-	  ,CONCAT(CAST( ([PatientSentForDate]) AS Date ) ,' ', CONVERT(VARCHAR, (cast((substring(([PatientSentFor]+'00'),0,3)+':'+substring(([PatientSentFor]+'00'),3,2)+':'+substring(([PatientSentFor]+'00'),5,2)) as time)), 20) ) AS XX1
-	  ,CAST(DATEDIFF(s, '1970-01-01 00:00:00.000', (CONCAT(CAST( ([PatientSentForDate]) AS Date ) ,' ', CONVERT(VARCHAR, (cast((substring(([PatientSentFor]+'00'),0,3)+':'+substring(([PatientSentFor]+'00'),3,2)+':'+substring(([PatientSentFor]+'00'),5,2)) as time)), 20) )) ) as bigint) as XX2
-      , dateadd(s, convert(bigint, 1283174502729) / 1000, convert(datetime, '1-1-1970 00:00:00'))as XX3
-      , dateadd(s, convert(bigint, 1591863300000) / 1000, convert(datetime, '1-1-1970 00:00:00'))as XX4
-	  ,CONCAT((CAST(DATEDIFF(s, '1970-01-01 00:00:00.000', (CONCAT(CAST( ([PatientSentForDate]) AS Date ) ,' ', CONVERT(VARCHAR, (cast((substring(([PatientSentFor]+'00'),0,3)+':'+substring(([PatientSentFor]+'00'),3,2)+':'+substring(([PatientSentFor]+'00'),5,2)) as time)), 20) )) ) as bigint)),'000') AS XX2B
-     ,dateadd(s, convert(bigint, ((CONCAT((CAST(DATEDIFF(s, '1970-01-01 00:00:00.000', (CONCAT(CAST( ([PatientSentForDate]) AS Date ) ,' ', CONVERT(VARCHAR, (cast((substring(([PatientSentFor]+'00'),0,3)+':'+substring(([PatientSentFor]+'00'),3,2)+':'+substring(([PatientSentFor]+'00'),5,2)) as time)), 20) )) ) as bigint)),'000')))) / 1000, convert(datetime, '1-1-1970 00:00:00'))as XX5  
-    ,CONCAT((CAST(DATEDIFF(s, '1970-01-01 00:00:00.000', (CONCAT(CAST( ([OutOfTheatreDate]) AS Date ) ,' ', CONVERT(VARCHAR, (cast((substring(([OutOfTheatre]+'00'),0,3)+':'+substring(([OutOfTheatre]+'00'),3,2)+':'+substring(([OutOfTheatre]+'00'),5,2)) as time)), 20) )) ) as bigint)),'000') AS ZZ1A
-	,OutOfTheatre
-	,OutOfTheatreDate
-	--,((CONCAT((CAST(DATEDIFF(s, '1970-01-01 00:00:00.000', (CONCAT(CAST( ([OutOfTheatreDate]) AS Date ) ,' ', CONVERT(VARCHAR, (cast((substring(([OutOfTheatre]+'00'),0,3)+':'+substring(([OutOfTheatre]+'00'),3,2)+':'+substring(([OutOfTheatre]+'00'),5,2)) as time)), 20) )) ) as bigint)),'000')-(CONCAT((CAST(DATEDIFF(s, '1970-01-01 00:00:00.000', (CONCAT(CAST( ([PatientSentForDate]) AS Date ) ,' ', CONVERT(VARCHAR, (cast((substring(([PatientSentFor]+'00'),0,3)+':'+substring(([PatientSentFor]+'00'),3,2)+':'+substring(([PatientSentFor]+'00'),5,2)) as time)), 20) )) ) as bigint)),'000')))) AS Duration
-	
-	FROM [TLC_DR_DEV].[dbo].[vw_PatientOperationsCasesTimeStampsDev]
-	WHERE [PatientSentFor] != 0 AND OutOfTheatre !=0
-	)
-	SELECT 
-	Urn
-	, XX2
-	, XX2B
-	,ZZ1A
-	, cast(XX2 as INT) AS XX2Int
-	---,LEFT(ZZ1A, LEN(ZZ1A)-2) AS ZZ1Atest
-	--, cast((LEFT(ZZ1A, LEN(ZZ1A)-2)) as INT) AS ZZ1AInt
-	,CAST(XX2B AS DECIMAL(18, 2)) AS XX2BDecimal
-	, CAST(ZZ1A AS DECIMAL(18, 2)) AS ZZ1ADecimal
-	,( (CAST(ZZ1A AS DECIMAL(18, 2)))-(CAST(XX2B AS DECIMAL(18, 2))) )/60000 AS DurationInMinutes
-	,CAST((( (CAST(ZZ1A AS DECIMAL(18, 2)))-(CAST(XX2B AS DECIMAL(18, 2))) )/60000) AS INT) AS DurationInMinutes2
-	FROM CTE1
-
-
-
-
-
-
-
-GO
-
-
+      ,[Month]
+      ,[WeekOfYear]
+      ,[MonthYear]
+      ,[OperationRoom]
+      ,[AccountNumber]
+      ,[UnitNumber]
+      ,[PatientName]
+      ,[PatientService]
+      ,[ActualOpSurgeon]
+      ,[SurgeonName]
+      
+	  ,COALESCE ((NULLIF([BeginAnaesthesia], 0)),(NULLIF([SurgeryBegin], 0)),(NULLIF([PatientArrival], 0)))  
+	   AS SurgeryStartDerivedTime	  
+	  ,COALESCE((NULLIF([BeginAnaesthesiaDate],0)),(NULLIF([SurgeryBeginDate],0)),(NULLIF([PatientArrivalDate],0))) AS SurgeryStartDerivedDate
+	  
+	   ,COALESCE ((NULLIF([OutOfTheatre], 0)),(NULLIF([AnaesthesiaEnd], 0)),(NULLIF([SurgeryEnd], 0)),(NULLIF([InPASCUInRecovery1], 0)))  
+	   AS SurgeryEndDerivedTime
+	  ,COALESCE ((NULLIF([OutOfTheatreDate],0)),(NULLIF([AnaesthesiaEndDate],0)),(NULLIF([SurgeryEndDate],0)),(NULLIF([InPASCUInRecovery1Date],0))) 
+	   AS SurgeryEndDerivedDate
+	  ,[PatientSentFor]
+      ,[PatientSentForDate]
+      ,[PatientArrival]
+      ,[PatientArrivalDate]
+      ,[BeginAnaesthesia]
+      ,[BeginAnaesthesiaDate]
+      ,[SurgeryBegin]
+      ,[SurgeryBeginDate]
+      ,[SurgeryEnd]
+      ,[SurgeryEndDate]
+      ,[AnaesthesiaEnd]
+      ,[AnaesthesiaEndDate]
+      ,[OutOfTheatre]
+      ,[OutOfTheatreDate]
+      ,[InPASCUInRecovery1]
+      ,[InPASCUInRecovery1Date]
+      ,[InPASCUInRecovery2]
+      ,[InPASCUInRecovery2Date]
+      ,[OutofPASCU/Dept]
+      ,[OutofPASCU/DeptDate]
+  FROM [TLC_DR_DEV].[dbo].[vw_PatientOperationsCasesTimeStampsDev]
