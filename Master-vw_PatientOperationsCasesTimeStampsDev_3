@@ -1,12 +1,13 @@
 USE [TLC_DR_DEV]
 GO
 
-/****** Object:  View [dbo].[vw_PatientOperationsCasesTimeStampsDev_3]    Script Date: 14/06/2020 12:26:13 ******/
+/****** Object:  View [dbo].[vw_PatientOperationsCasesTimeStampsDev_3]    Script Date: 14/06/2020 12:32:56 ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
+
 
 
 
@@ -165,8 +166,10 @@ and   [OperationRoom] in ( 'THOT01','THOT02','THOT03','THOT04','THOT05','THOT06'
 	  
   FROM CTE1
 
-  Where [OperationDate]  >=DATEADD(day,-7,GETDATE())
-  AND
+  Where 
+  ---[OperationDate]  >=DATEADD(day,-7,GETDATE())
+  ---AND
+
    OperationRoom IN ( 'DS 1A','THEATRE 1','THEATRE 2','THEATRE 5','THEATRE 7','THEATRE 6','THEATRE 3','DS 2A',
   'THEATRE 8','MINOPSA',								
                     'THEATRE 4', 'THEATRE HYB','MITU TH2','MITU TH1','MITU TR1'								
@@ -322,6 +325,7 @@ SELECT
 	    FROM CTE4
    )
    SELECT * FROM CTE5
+
 
 
 
