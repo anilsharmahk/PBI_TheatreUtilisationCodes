@@ -1,0 +1,74 @@
+USE [TLC_DR_DEV]
+GO
+
+/****** Object:  View [dbo].[vw_BAR_Pat_Data_Dev]    Script Date: 17/06/2020 16:01:08 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+
+
+
+/**********************************************************
+Date: 28/05/2020
+By: EEdwards
+Desc: Patient Address and Email address with a Current Patient Balance 
+Case # 91594
+Amended : 170620
+Case # 
+***********************************************************/
+CREATE View  [dbo].[vw_BAR_Pat_Data_Dev]
+
+as
+
+SELECT 
+       p.Account, 
+	   p.UnitNumber, 
+	   d.Number, 
+	   p.Sex, 
+	   d.[Name]
+	   ,f.[ZcusPatTitle] as Title 
+	  -- ,Case When p.Sex = 'M' then 'Mr' else 'Ms' End As Title,
+      ,LEFT( d.[Name], CHARINDEX(',',  d.[Name], 1) - 1) AS LastName,   
+       RTRIM(LTRIM(STUFF( d.[Name], 1, CHARINDEX(',',  d.[Name], 1), ''))) AS FirstName ,
+	   p.Birthdate, 
+	   DATEDIFF( year, p.Birthdate, Getdate()) as Age 
+	   , p.[Addr1], p.[Addr2],p.[City]
+	   , p.[State], p.[Zip], p.HomePhone , g.[OtherPhone]
+	   ,e.Email, p.FinClass , b.PtBalance
+from 
+[LIVE_BARLCL].[dbo].[BarAcctDemographics] d
+inner join
+[LIVE_BARLCL].[dbo].[BarAcctPtId] p
+on d.Account = p.Account
+inner join
+[LIVE_BARLCL].[dbo].[BarAcct] b
+on
+p.account = b.account
+left outer  join
+[LIVE_BARLCL].dbo.BarAcctPtidEmail e
+on
+p.Account = e.Account collate SQL_Latin1_General_CP1_CS_AS
+
+left outer  join
+[LIVE_BARLCL].[dbo].BarPatUkPtId f
+on 
+p.Account=f.Account  collate SQL_Latin1_General_CP1_CS_AS
+
+left outer  join
+[LIVE_BARLCL].[dbo].BarAcctPtid2 g
+on 
+p.Account=g.Account  collate SQL_Latin1_General_CP1_CS_AS
+
+where b.PtBalance <> '0'
+
+
+
+
+
+GO
+
+
